@@ -1,6 +1,6 @@
-# Philosophy: Why Not MCP?
+# Why Not MCP?
 
-This project is inspired by [Mario Zechner's article](https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/) arguing that simple CLI tools can be more efficient than Model Context Protocol (MCP) servers for browser automation.
+Simple CLI tools can be more efficient than Model Context Protocol (MCP) servers for browser automation.
 
 ## Key Advantages
 
@@ -68,7 +68,7 @@ brow excels when you need:
 
 ## Token Cost Comparison (Real Example)
 
-### Scraping Hacker News
+### Scraping Quotes from quotes.toscrape.com
 
 **With MCP:**
 - Initial context: 13,000 tokens (tool descriptions)

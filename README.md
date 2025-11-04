@@ -93,25 +93,65 @@ brow pdf --no-background
 - **Stateful**: Chrome instance maintains state between commands
 - **Extensible**: Add new commands by creating new Go files in cmd/
 
-## Example Agent Workflow
+## Example Workflows
 
+### Scrape Quotes (using quotes.toscrape.com)
 ```bash
 # Start browser
 brow start --profile
 
-# Navigate and scrape
-brow nav https://news.ycombinator.com
-brow eval 'document.querySelectorAll(".titleline > a").length'
+# Navigate to practice scraping site
+brow nav https://quotes.toscrape.com
 
-# Get all story titles
-brow eval 'Array.from(document.querySelectorAll(".titleline > a")).map(a => ({title: a.textContent, url: a.href}))' > stories.json
+# Count quotes on page
+brow eval 'document.querySelectorAll(".quote").length'
 
-# Screenshot
-brow screenshot hn.png
+# Extract all quotes with authors and tags
+brow eval 'Array.from(document.querySelectorAll(".quote")).map(quote => ({
+  text: quote.querySelector(".text").textContent.trim(),
+  author: quote.querySelector(".author").textContent,
+  tags: Array.from(quote.querySelectorAll(".tag")).map(tag => tag.textContent)
+}))' > quotes.json
 
-# Export PDF
-brow pdf hn.pdf
+# Screenshot and PDF
+brow screenshot quotes.png
+brow pdf quotes.pdf
 ```
+
+### Scrape Book Catalog (using books.toscrape.com)
+```bash
+# Navigate to book catalog
+brow nav https://books.toscrape.com
+
+# Extract book data
+brow eval 'Array.from(document.querySelectorAll(".product_pod")).map(book => ({
+  title: book.querySelector("h3 a").getAttribute("title"),
+  price: book.querySelector(".price_color").textContent,
+  availability: book.querySelector(".availability").textContent.trim()
+}))' > books.json
+
+# Capture catalog
+brow screenshot books.png
+```
+
+**Note**: These examples use sites specifically designed for web scraping practice. See `examples/` directory for complete scripts.
+
+## Running Examples
+
+Complete example scripts are available in the `examples/` directory.
+
+### Run from examples directory:
+```bash
+cd examples
+./quotes.sh    # Scrape quotes.toscrape.com
+./books.sh     # Scrape books.toscrape.com
+```
+
+### What the examples produce:
+- **quotes.sh**: `quotes.json`, `quotes.png`, `quotes.pdf`
+- **books.sh**: `books.json`, `book-titles.json`, `books.png`, `books.pdf`
+
+**Note:** The example scripts must be run from the `examples/` directory because they reference `../brow` to access the binary in the project root.
 
 ## Architecture
 
@@ -129,12 +169,12 @@ brow pdf hn.pdf
 ## Installation
 
 ```bash
-git clone https://github.com/matej/brow
+git clone https://github.com/matejch/brow
 cd brow
 go build -o brow
 ```
 
 Or install directly:
 ```bash
-go install github.com/matej/brow@latest
+go install github.com/matejch/brow@latest
 ```

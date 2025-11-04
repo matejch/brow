@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +33,7 @@ func init() {
 	startCmd.Flags().BoolVar(&headless, "headless", false, "Run Chrome in headless mode")
 }
 
-func runStart(cmd *cobra.Command, args []string) error {
+func runStart(_ *cobra.Command, _ []string) error {
 	chromePath, err := findChrome()
 	if err != nil {
 		return fmt.Errorf("Chrome not found: %w", err)
@@ -70,16 +71,35 @@ func runStart(cmd *cobra.Command, args []string) error {
 
 	// Start Chrome
 	chromeCmd := exec.Command(chromePath, chromeArgs...)
-	chromeCmd.Stdout = os.Stdout
-	chromeCmd.Stderr = os.Stderr
+
+	// Detach Chrome from the parent process so it survives after brow exits
+	// Use Setsid (not Setpgid) to create a new session and fully detach from terminal
+	chromeCmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true, // Create new session - makes Chrome a true daemon
+	}
+
+	// Disconnect stdio streams to prevent hanging
+	// Chrome will run independently in the background
+	chromeCmd.Stdout = nil
+	chromeCmd.Stderr = nil
+	chromeCmd.Stdin = nil
 
 	if err := chromeCmd.Start(); err != nil {
 		return fmt.Errorf("failed to start Chrome: %w", err)
 	}
 
-	fmt.Printf("Chrome started (PID: %d)\n", chromeCmd.Process.Pid)
+	// Save PID before calling Release() (Release invalidates the handle)
+	pid := chromeCmd.Process.Pid
+
+	// Release the process so it continues after brow exits
+	if err := chromeCmd.Process.Release(); err != nil {
+		return fmt.Errorf("failed to release Chrome process: %w", err)
+	}
+
+	fmt.Printf("Chrome started (PID: %d)\n", pid)
 	fmt.Printf("Remote debugging: http://localhost:9222\n")
 	fmt.Printf("Profile: %s\n", userDataDir)
+	fmt.Println("Chrome is running in the background. Close Chrome manually when done.")
 
 	return nil
 }

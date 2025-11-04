@@ -25,8 +25,15 @@ func init() {
 	navCmd.Flags().BoolVarP(&waitReady, "wait", "w", true, "Wait for page to be ready (default true)")
 }
 
-func runNav(cmd *cobra.Command, args []string) error {
+func runNav(_ *cobra.Command, args []string) error {
 	url := args[0]
+
+	// Attach to existing tab instead of creating a new one
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
 
 	var title string
 	actions := []chromedp.Action{
@@ -39,7 +46,7 @@ func runNav(cmd *cobra.Command, args []string) error {
 
 	actions = append(actions, chromedp.Title(&title))
 
-	if err := browser.Run(actions...); err != nil {
+	if err := chromedp.Run(ctx, actions...); err != nil {
 		return fmt.Errorf("failed to navigate: %w", err)
 	}
 

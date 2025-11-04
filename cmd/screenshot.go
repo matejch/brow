@@ -32,11 +32,18 @@ func init() {
 	screenshotCmd.Flags().BoolVarP(&base64Out, "base64", "b", false, "Output base64-encoded image data")
 }
 
-func runScreenshot(cmd *cobra.Command, args []string) error {
+func runScreenshot(_ *cobra.Command, args []string) error {
 	// Determine output file
 	if len(args) > 0 {
 		outputFile = args[0]
 	}
+
+	// Attach to existing tab
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
 
 	var buf []byte
 	var action chromedp.Action
@@ -47,7 +54,7 @@ func runScreenshot(cmd *cobra.Command, args []string) error {
 		action = chromedp.CaptureScreenshot(&buf)
 	}
 
-	if err := browser.Run(action); err != nil {
+	if err := chromedp.Run(ctx, action); err != nil {
 		return fmt.Errorf("failed to capture screenshot: %w", err)
 	}
 

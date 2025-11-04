@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	xpath   bool
-	closest bool
+	xpath bool
 )
 
 var pickCmd = &cobra.Command{
@@ -29,7 +28,7 @@ func init() {
 	pickCmd.Flags().BoolVarP(&xpath, "xpath", "x", false, "Return XPath instead of CSS selector")
 }
 
-func runPick(cmd *cobra.Command, args []string) error {
+func runPick(_ *cobra.Command, _ []string) error {
 	// JavaScript to inject the element picker
 	pickerScript := `
 (function() {
@@ -143,8 +142,15 @@ func runPick(cmd *cobra.Command, args []string) error {
 })();
 `
 
+	// Attach to existing tab
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+
 	// Inject the picker script
-	if err := browser.Run(chromedp.Evaluate(pickerScript, nil)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(pickerScript, nil)); err != nil {
 		return fmt.Errorf("failed to inject picker: %w", err)
 	}
 

@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	storageType string
-	key         string
-	value       string
-	deleteKey   bool
+	storageType  string
+	key          string
+	value        string
+	deleteKey    bool
 	clearStorage bool
 )
 
@@ -35,7 +35,14 @@ func init() {
 	storageCmd.Flags().BoolVarP(&clearStorage, "clear", "c", false, "Clear all storage")
 }
 
-func runStorage(cmd *cobra.Command, args []string) error {
+func runStorage(_ *cobra.Command, _ []string) error {
+	// Attach to existing tab
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+
 	// Determine storage type
 	var storageName string
 	if storageType == "session" {
@@ -47,7 +54,7 @@ func runStorage(cmd *cobra.Command, args []string) error {
 	// Clear storage
 	if clearStorage {
 		script := fmt.Sprintf("%s.clear()", storageName)
-		if err := browser.Run(chromedp.Evaluate(script, nil)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
 			return fmt.Errorf("failed to clear storage: %w", err)
 		}
 		fmt.Printf("%s cleared\n", storageName)
@@ -57,7 +64,7 @@ func runStorage(cmd *cobra.Command, args []string) error {
 	// Delete key
 	if deleteKey && key != "" {
 		script := fmt.Sprintf("%s.removeItem(%q)", storageName, key)
-		if err := browser.Run(chromedp.Evaluate(script, nil)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
 			return fmt.Errorf("failed to delete key: %w", err)
 		}
 		fmt.Printf("Deleted key: %s\n", key)
@@ -67,7 +74,7 @@ func runStorage(cmd *cobra.Command, args []string) error {
 	// Set value
 	if key != "" && value != "" {
 		script := fmt.Sprintf("%s.setItem(%q, %q)", storageName, key, value)
-		if err := browser.Run(chromedp.Evaluate(script, nil)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
 			return fmt.Errorf("failed to set value: %w", err)
 		}
 		fmt.Printf("Set %s[%s] = %s\n", storageName, key, value)
@@ -78,7 +85,7 @@ func runStorage(cmd *cobra.Command, args []string) error {
 	if key != "" {
 		script := fmt.Sprintf("%s.getItem(%q)", storageName, key)
 		var result interface{}
-		if err := browser.Run(chromedp.Evaluate(script, &result)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
 			return fmt.Errorf("failed to get value: %w", err)
 		}
 		fmt.Printf("%v\n", result)
@@ -98,7 +105,7 @@ func runStorage(cmd *cobra.Command, args []string) error {
 	`, storageName, storageName, storageName)
 
 	var result interface{}
-	if err := browser.Run(chromedp.Evaluate(script, &result)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
 		return fmt.Errorf("failed to get storage items: %w", err)
 	}
 

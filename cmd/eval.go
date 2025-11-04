@@ -29,11 +29,18 @@ func init() {
 	evalCmd.Flags().BoolVarP(&jsonOutput, "json", "j", true, "Format output as JSON (default true)")
 }
 
-func runEval(cmd *cobra.Command, args []string) error {
+func runEval(_ *cobra.Command, args []string) error {
 	script := args[0]
 
+	// Attach to existing tab
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+
 	var result interface{}
-	if err := browser.Run(chromedp.Evaluate(script, &result)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
 		return fmt.Errorf("failed to evaluate JavaScript: %w", err)
 	}
 

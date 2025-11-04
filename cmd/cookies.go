@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	domain     string
-	setCookie  string
+	domain       string
+	setCookie    string
 	clearCookies bool
 )
 
@@ -34,7 +34,7 @@ func init() {
 	cookiesCmd.Flags().BoolVarP(&clearCookies, "clear", "c", false, "Clear all cookies")
 }
 
-func runCookies(cmd *cobra.Command, args []string) error {
+func runCookies(_ *cobra.Command, _ []string) error {
 	// Clear cookies
 	if clearCookies {
 		return clearAllCookies()
@@ -50,7 +50,7 @@ func runCookies(cmd *cobra.Command, args []string) error {
 }
 
 func getCookies() error {
-	ctx, cancel, err := browser.NewContext()
+	ctx, cancel, err := browser.GetExistingTabContext()
 	if err != nil {
 		return err
 	}
@@ -95,9 +95,15 @@ func setACookie() error {
 	// For more complex cookies, users can use JavaScript via eval
 	fmt.Println("Setting cookie via JavaScript...")
 
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+
 	script := fmt.Sprintf("document.cookie = %q", setCookie)
 
-	if err := browser.Run(chromedp.Evaluate(script, nil)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
 		return fmt.Errorf("failed to set cookie: %w", err)
 	}
 
@@ -106,7 +112,7 @@ func setACookie() error {
 }
 
 func clearAllCookies() error {
-	ctx, cancel, err := browser.NewContext()
+	ctx, cancel, err := browser.GetExistingTabContext()
 	if err != nil {
 		return err
 	}

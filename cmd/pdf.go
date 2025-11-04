@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	landscape    bool
-	printBg      bool
-	pdfOutput    string
+	landscape bool
+	printBg   bool
+	pdfOutput string
 )
 
 var pdfCmd = &cobra.Command{
@@ -32,7 +32,7 @@ func init() {
 	pdfCmd.Flags().BoolVarP(&printBg, "background", "b", true, "Print background graphics (default true)")
 }
 
-func runPDF(cmd *cobra.Command, args []string) error {
+func runPDF(_ *cobra.Command, args []string) error {
 	// Determine output file
 	if len(args) > 0 {
 		pdfOutput = args[0]
@@ -40,9 +40,16 @@ func runPDF(cmd *cobra.Command, args []string) error {
 		pdfOutput = "output.pdf"
 	}
 
+	// Attach to existing tab
+	ctx, cancel, err := browser.GetExistingTabContext()
+	if err != nil {
+		return err
+	}
+	defer cancel()
+
 	var buf []byte
 
-	if err := browser.Run(chromedp.ActionFunc(func(ctx context.Context) error {
+	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		buf, _, err = page.PrintToPDF().
 			WithPrintBackground(printBg).
