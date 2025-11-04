@@ -1,0 +1,66 @@
+# Binaries for programs and plugins
+brow
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output coverage files from testing
+*.out
+coverage.txt
+coverage.html
+
+# Go build cache
+.cache/
+
+# Dependency directories
+vendor/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Browser profile data
+.brow-profile/
+
+# Example output files (keep examples/ directory but ignore outputs)
+*.png
+*.pdf
+*.json
+examples/*.png
+examples/*.pdf
+examples/*.json
