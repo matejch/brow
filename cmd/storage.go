@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/chromedp/chromedp"
-	"github.com/matejch/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/client"
+	"github.com/matejch/brow/pkg/config"
+	"github.com/matejch/brow/pkg/operations"
 	"github.com/spf13/cobra"
 )
 
@@ -36,29 +37,31 @@ func init() {
 }
 
 func runStorage(_ *cobra.Command, _ []string) error {
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
-
-	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to browser: %w", err)
 	}
-	defer cancel()
+	defer browser.Close()
+
+	page := browser.Page()
 
 	// Determine storage type
+	var st operations.StorageType
 	var storageName string
 	if storageType == "session" {
+		st = operations.SessionStorage
 		storageName = "sessionStorage"
 	} else {
+		st = operations.LocalStorage
 		storageName = "localStorage"
 	}
 
 	// Clear storage
 	if clearStorage {
-		script := fmt.Sprintf("%s.clear()", storageName)
-		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
-			return fmt.Errorf("failed to clear storage: %w", err)
+		if err := page.ClearStorage(st); err != nil {
+			return err
 		}
 		fmt.Printf("%s cleared\n", storageName)
 		return nil
@@ -66,9 +69,8 @@ func runStorage(_ *cobra.Command, _ []string) error {
 
 	// Delete key
 	if deleteKey && key != "" {
-		script := fmt.Sprintf("%s.removeItem(%q)", storageName, key)
-		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
-			return fmt.Errorf("failed to delete key: %w", err)
+		if err := page.RemoveStorageItem(st, key); err != nil {
+			return err
 		}
 		fmt.Printf("Deleted key: %s\n", key)
 		return nil
@@ -76,9 +78,8 @@ func runStorage(_ *cobra.Command, _ []string) error {
 
 	// Set value
 	if key != "" && value != "" {
-		script := fmt.Sprintf("%s.setItem(%q, %q)", storageName, key, value)
-		if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
-			return fmt.Errorf("failed to set value: %w", err)
+		if err := page.SetStorageItem(st, key, value); err != nil {
+			return err
 		}
 		fmt.Printf("Set %s[%s] = %s\n", storageName, key, value)
 		return nil
@@ -86,30 +87,18 @@ func runStorage(_ *cobra.Command, _ []string) error {
 
 	// Get specific key
 	if key != "" {
-		script := fmt.Sprintf("%s.getItem(%q)", storageName, key)
-		var result interface{}
-		if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
-			return fmt.Errorf("failed to get value: %w", err)
+		result, err := page.GetStorageItem(st, key)
+		if err != nil {
+			return err
 		}
 		fmt.Printf("%v\n", result)
 		return nil
 	}
 
 	// Get all items (default)
-	script := fmt.Sprintf(`
-		(() => {
-			let items = {};
-			for (let i = 0; i < %s.length; i++) {
-				let key = %s.key(i);
-				items[key] = %s.getItem(key);
-			}
-			return items;
-		})()
-	`, storageName, storageName, storageName)
-
-	var result interface{}
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
-		return fmt.Errorf("failed to get storage items: %w", err)
+	result, err := page.GetAllStorage(st)
+	if err != nil {
+		return err
 	}
 
 	// Format as JSON

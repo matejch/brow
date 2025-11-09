@@ -123,6 +123,77 @@ brow nav https://example.com                    # Controls port 9222
 brow --port 9223 nav https://different-site.com # Controls port 9223
 ```
 
+## Library Usage
+
+brow can also be used as a Go library for writing browser automation tests and applications:
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+
+    "github.com/matejch/brow/pkg/client"
+    "github.com/matejch/brow/pkg/config"
+    "github.com/matejch/brow/pkg/operations"
+)
+
+func main() {
+    // Create browser instance (connects to existing Chrome)
+    browser, err := client.New(&config.Config{
+        Port:    9222,
+        Timeout: 30 * time.Second,
+    })
+    if err != nil {
+        panic(err)
+    }
+    defer browser.Close()
+
+    page := browser.Page()
+
+    // Navigate to a page
+    result, _ := page.Navigate("https://example.com", true)
+    fmt.Printf("Title: %s\n", result.Title)
+
+    // Execute JavaScript
+    linkCount, _ := page.Eval("document.querySelectorAll('a').length")
+    fmt.Printf("Links: %v\n", linkCount)
+
+    // Capture screenshot
+    screenshot, _ := page.Screenshot(operations.ScreenshotOptions{
+        FullPage: true,
+    })
+    // ... save screenshot to file
+
+    // Manage cookies
+    cookies, _ := page.GetCookies("")
+    fmt.Printf("Found %d cookies\n", len(cookies))
+
+    // Work with localStorage
+    page.SetStorageItem(operations.LocalStorage, "key", "value")
+    value, _ := page.GetStorageItem(operations.LocalStorage, "key")
+
+    // Generate PDF
+    pdf, _ := page.PDF(operations.PDFOptions{
+        Landscape: false,
+        PrintBackground: true,
+    })
+    // ... save PDF to file
+}
+```
+
+### Library Features
+
+- **Simple API**: Browser and Page objects with methods for all operations
+- **No global state**: Create multiple browser instances with different configurations
+- **Type-safe**: Strongly-typed options for screenshots, PDFs, storage, etc.
+- **Resource management**: Proper cleanup with defer browser.Close()
+- **Timeout support**: Configure operation timeouts
+- **Input sanitization**: Built-in protection against JavaScript injection
+
+See `examples/library_test.go` for complete usage examples and tests.
+
 ## Philosophy
 
 - **Composable**: Each command is independent and outputs text/files
@@ -130,6 +201,7 @@ brow --port 9223 nav https://different-site.com # Controls port 9223
 - **Simple**: Just CLI tools, no complex protocols
 - **Stateful**: Chrome instance maintains state between commands
 - **Extensible**: Add new commands by creating new Go files in cmd/
+- **Library-first**: Core functionality available as clean Go API
 
 ## Example Workflows
 

@@ -68,6 +68,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 		fmt.Sprintf("--user-data-dir=%s", userDataDir),
 		"--no-first-run",
 		"--no-default-browser-check",
+		"about:blank", // Force Chrome to create an initial tab
 	}
 
 	if headless {

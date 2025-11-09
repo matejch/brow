@@ -1,0 +1,225 @@
+run:
+  timeout: 5m
+  tests: false
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: false
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Too strict for CLI tools
+
+  revive:
+    severity: warning
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: if-return
+      - name: empty-block
+      - name: superfluous-else
+      - name: struct-tag
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104  # Errors unhandled - handled by errcheck
+      - G204  # Command injection - CLI tools need subprocess execution
+
+  gocyclo:
+    min-complexity: 15
+
+  gocognit:
+    min-complexity: 20
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - whyNoLint
+      - unnamedResult
+      - hugeParam
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  lll:
+    line-length: 120
+
+  maligned:
+    suggest-new: true
+
+  misspell:
+    locale: US
+
+  unparam:
+    check-exported: false
+
+  unused:
+    check-exported: false
+
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+linters:
+  enable:
+    # Error detection
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+
+    # Bug detection
+    - bodyclose
+    - gosec
+    - gocritic
+    - rowserrcheck
+    - unconvert
+    - unparam
+    - unused
+    - wastedassign
+
+    # Performance
+    - prealloc
+
+    # Style
+    - gofmt
+    - goimports
+    - revive
+    - misspell
+    - whitespace
+
+    # Complexity
+    - gocyclo
+    - gocognit
+    - funlen
+
+    # Code quality
+    - dupl
+    - goconst
+    - gofumpt
+    - lll
+
+    # Specific to CLI tools
+    - copyloopvar
+    - forbidigo
+    - gci
+    - goheader
+    - mnd
+    - gomodguard
+    - goprintffuncname
+    - importas
+    - makezero
+    - nakedret
+    - nilerr
+    - nilnil
+    - nolintlint
+    - predeclared
+    - promlinter
+    - reassign
+    - stylecheck
+    - tenv
+    - testableexamples
+    - thelper
+    - tparallel
+    - unconvert
+    - usestdlibvars
+    - varnamelen
+    - wsl
+
+  disable:
+    # Disabled for CLI tools
+    - sqlclosecheck  # No database usage
+    - noctx         # CLI tools often don't need context
+    - interfacebloat # CLI tools have simpler interfaces
+
+  fast: false
+
+issues:
+  exclude-dirs:
+    - vendor
+    - third_party
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_gen\\.go$"
+  exclude-rules:
+    # Disable some linters for tests
+    - path: _test\.go
+      linters:
+        - gocritic
+        - gosec
+        - dupl
+        - funlen
+        - varnamelen
+        - mnd
+
+    # Disable complexity linters for main.go
+    - path: main\.go
+      linters:
+        - funlen
+        - gocognit
+        - gocyclo
+
+    # Allow long lines in generated files
+    - path: .*_gen\.go
+      linters:
+        - lll
+        - gocritic
+        - govet
+
+    # Ignore certain words in comments
+    - text: "don't use an underscore in package name"
+      linters:
+        - revive
+
+    # Ignore certain security issues for CLI tools
+    - text: "G304: Potential file inclusion"
+      linters:
+        - gosec
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chromedp/chromedp"
-	"github.com/matejch/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/client"
+	"github.com/matejch/brow/pkg/config"
+	"github.com/matejch/brow/pkg/operations"
 	"github.com/spf13/cobra"
 )
 
@@ -38,27 +39,20 @@ func runScreenshot(_ *cobra.Command, args []string) error {
 		outputFile = args[0]
 	}
 
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to browser: %w", err)
+	}
+	defer browser.Close()
 
-	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	buf, err := browser.Page().Screenshot(operations.ScreenshotOptions{
+		FullPage: fullPage,
+		Quality:  100,
+	})
 	if err != nil {
 		return err
-	}
-	defer cancel()
-
-	var buf []byte
-	var action chromedp.Action
-
-	if fullPage {
-		action = chromedp.FullScreenshot(&buf, 100)
-	} else {
-		action = chromedp.CaptureScreenshot(&buf)
-	}
-
-	if err := chromedp.Run(ctx, action); err != nil {
-		return fmt.Errorf("failed to capture screenshot: %w", err)
 	}
 
 	// Handle output

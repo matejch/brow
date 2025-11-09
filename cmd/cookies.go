@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
-	"github.com/matejch/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/client"
+	"github.com/matejch/brow/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -50,37 +48,17 @@ func runCookies(_ *cobra.Command, _ []string) error {
 }
 
 func getCookies() error {
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to browser: %w", err)
+	}
+	defer browser.Close()
 
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	cookies, err := browser.Page().GetCookies(domain)
 	if err != nil {
 		return err
-	}
-	defer cancel()
-
-	var cookies []*network.Cookie
-
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-		allCookies, err := network.GetCookies().Do(ctx)
-		if err != nil {
-			return err
-		}
-
-		// Filter by domain if specified
-		if domain != "" {
-			for _, cookie := range allCookies {
-				if cookie.Domain == domain || "."+cookie.Domain == domain {
-					cookies = append(cookies, cookie)
-				}
-			}
-		} else {
-			cookies = allCookies
-		}
-
-		return nil
-	})); err != nil {
-		return fmt.Errorf("failed to get cookies: %w", err)
 	}
 
 	// Format as JSON
@@ -94,23 +72,16 @@ func getCookies() error {
 }
 
 func setACookie() error {
-	// Simple cookie parsing (name=value format)
-	// For more complex cookies, users can use JavaScript via eval
-	fmt.Println("Setting cookie via JavaScript...")
-
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
-
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to browser: %w", err)
 	}
-	defer cancel()
+	defer browser.Close()
 
-	script := fmt.Sprintf("document.cookie = %q", setCookie)
-
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, nil)); err != nil {
-		return fmt.Errorf("failed to set cookie: %w", err)
+	if err := browser.Page().SetCookie(setCookie); err != nil {
+		return err
 	}
 
 	fmt.Println("Cookie set successfully")
@@ -118,19 +89,16 @@ func setACookie() error {
 }
 
 func clearAllCookies() error {
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
-
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to browser: %w", err)
 	}
-	defer cancel()
+	defer browser.Close()
 
-	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-		return network.ClearBrowserCookies().Do(ctx)
-	})); err != nil {
-		return fmt.Errorf("failed to clear cookies: %w", err)
+	if err := browser.Page().ClearCookies(); err != nil {
+		return err
 	}
 
 	fmt.Println("All cookies cleared")

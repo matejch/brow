@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/chromedp/chromedp"
-	"github.com/matejch/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/client"
+	"github.com/matejch/brow/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -32,19 +32,17 @@ func init() {
 func runEval(_ *cobra.Command, args []string) error {
 	script := args[0]
 
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to browser: %w", err)
+	}
+	defer browser.Close()
 
-	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	result, err := browser.Page().Eval(script)
 	if err != nil {
 		return err
-	}
-	defer cancel()
-
-	var result interface{}
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &result)); err != nil {
-		return fmt.Errorf("failed to evaluate JavaScript: %w", err)
 	}
 
 	// Handle output formatting

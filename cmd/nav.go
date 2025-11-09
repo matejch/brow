@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/chromedp/chromedp"
-	"github.com/matejch/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/client"
+	"github.com/matejch/brow/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -28,33 +28,21 @@ func init() {
 func runNav(_ *cobra.Command, args []string) error {
 	url := args[0]
 
-	// Resolve the port to use (flag > env > default)
-	debugPort := browser.ResolvePort(Port)
+	browser, err := client.New(&config.Config{
+		Port: config.ResolvePort(Port),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to connect to browser: %w", err)
+	}
+	defer browser.Close()
 
-	// Attach to existing tab instead of creating a new one
-	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
+	result, err := browser.Page().Navigate(url, waitReady)
 	if err != nil {
 		return err
 	}
-	defer cancel()
-
-	var title string
-	actions := []chromedp.Action{
-		chromedp.Navigate(url),
-	}
-
-	if waitReady {
-		actions = append(actions, chromedp.WaitReady("body"))
-	}
-
-	actions = append(actions, chromedp.Title(&title))
-
-	if err := chromedp.Run(ctx, actions...); err != nil {
-		return fmt.Errorf("failed to navigate: %w", err)
-	}
 
 	fmt.Printf("Navigated to: %s\n", url)
-	fmt.Printf("Page title: %s\n", title)
+	fmt.Printf("Page title: %s\n", result.Title)
 
 	return nil
 }
