@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/matej/brow/cmd"
+	"github.com/matejch/brow/cmd"
 )
 
 func main() {

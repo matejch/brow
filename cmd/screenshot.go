@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/chromedp/chromedp"
-	"github.com/matej/brow/pkg/browser"
+	"github.com/matejch/brow/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
