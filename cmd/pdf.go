@@ -40,8 +40,11 @@ func runPDF(_ *cobra.Command, args []string) error {
 		pdfOutput = "output.pdf"
 	}
 
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
 	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext()
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}

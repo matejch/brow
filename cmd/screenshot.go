@@ -38,8 +38,11 @@ func runScreenshot(_ *cobra.Command, args []string) error {
 		outputFile = args[0]
 	}
 
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
 	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext()
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}

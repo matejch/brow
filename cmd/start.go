@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/matejch/brow/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,8 @@ var (
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Launch Chrome with remote debugging enabled",
-	Long: `Starts Chrome with remote debugging on port 9222.
+	Long: `Starts Chrome with remote debugging enabled.
+Port can be configured with --port flag or BROW_DEBUG_PORT env var (default: 9222).
 By default, uses a temporary profile for clean sessions.
 Use --profile to maintain cookies and login state.`,
 	RunE: runStart,
@@ -38,6 +40,9 @@ func runStart(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("Chrome not found: %w", err)
 	}
+
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
 
 	// Determine profile directory
 	var userDataDir string
@@ -59,7 +64,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 
 	// Build Chrome arguments
 	chromeArgs := []string{
-		fmt.Sprintf("--remote-debugging-port=%d", 9222),
+		fmt.Sprintf("--remote-debugging-port=%d", debugPort),
 		fmt.Sprintf("--user-data-dir=%s", userDataDir),
 		"--no-first-run",
 		"--no-default-browser-check",
@@ -97,7 +102,7 @@ func runStart(_ *cobra.Command, _ []string) error {
 	}
 
 	fmt.Printf("Chrome started (PID: %d)\n", pid)
-	fmt.Printf("Remote debugging: http://localhost:9222\n")
+	fmt.Printf("Remote debugging: http://localhost:%d\n", debugPort)
 	fmt.Printf("Profile: %s\n", userDataDir)
 	fmt.Println("Chrome is running in the background. Close Chrome manually when done.")
 

@@ -36,8 +36,11 @@ func init() {
 }
 
 func runStorage(_ *cobra.Command, _ []string) error {
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
 	// Attach to existing tab
-	ctx, cancel, err := browser.GetExistingTabContext()
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}

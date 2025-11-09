@@ -3,6 +3,8 @@ package browser
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
@@ -15,9 +17,28 @@ const (
 	DefaultHost = "localhost"
 )
 
+// ResolvePort determines which port to use based on command-line flag, environment variable, and default
+// Priority: flagPort (if != 0) > BROW_DEBUG_PORT env var > DefaultPort
+func ResolvePort(flagPort int) int {
+	// If flag was explicitly set, use it
+	if flagPort != 0 {
+		return flagPort
+	}
+
+	// Check environment variable
+	if envPort := os.Getenv("BROW_DEBUG_PORT"); envPort != "" {
+		if port, err := strconv.Atoi(envPort); err == nil && port > 0 {
+			return port
+		}
+	}
+
+	// Fall back to default
+	return DefaultPort
+}
+
 // GetRemoteAllocator creates a new allocator that connects to an existing Chrome instance
-func GetRemoteAllocator() (context.Context, context.CancelFunc, error) {
-	debugURL := fmt.Sprintf("http://%s:%d", DefaultHost, DefaultPort)
+func GetRemoteAllocator(port int) (context.Context, context.CancelFunc, error) {
+	debugURL := fmt.Sprintf("http://%s:%d", DefaultHost, port)
 
 	allocCtx, cancel := chromedp.NewRemoteAllocator(context.Background(), debugURL)
 
@@ -27,8 +48,8 @@ func GetRemoteAllocator() (context.Context, context.CancelFunc, error) {
 // GetExistingTabContext attaches to an existing browser tab without creating a new one
 // Returns a context that should NOT be cancelled if you want to keep the tab open
 // Only cancels the allocator context, not the tab context itself
-func GetExistingTabContext() (context.Context, context.CancelFunc, error) {
-	allocCtx, allocCancel, err := GetRemoteAllocator()
+func GetExistingTabContext(port int) (context.Context, context.CancelFunc, error) {
+	allocCtx, allocCancel, err := GetRemoteAllocator(port)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create remote allocator: %w", err)
 	}

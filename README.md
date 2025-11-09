@@ -20,11 +20,12 @@ go build -o brow
 ## Commands
 
 ### start
-Launch Chrome with remote debugging on port 9222.
+Launch Chrome with remote debugging (default port 9222).
 ```bash
 brow start              # Fresh session
 brow start --profile    # Persistent profile (keeps cookies/logins)
 brow start --headless   # Run headless
+brow start --port 9223  # Use custom port
 ```
 
 ### nav
@@ -83,6 +84,43 @@ Export page as PDF.
 brow pdf output.pdf
 brow pdf --landscape
 brow pdf --no-background
+```
+
+## Port Configuration
+
+By default, brow connects to Chrome on port 9222. You can customize the port in three ways:
+
+1. **Command-line flag** (highest precedence):
+```bash
+brow --port 9223 start
+brow --port 9223 nav https://example.com
+```
+
+2. **Environment variable**:
+```bash
+export BROW_DEBUG_PORT=9223
+brow start
+brow nav https://example.com
+```
+
+3. **Default fallback**: Port 9222 (if neither flag nor env var is set)
+
+**Use cases for custom ports:**
+- Run multiple Chrome instances simultaneously
+- Avoid port conflicts with other applications
+- Use in CI/CD environments with dynamic port allocation
+
+**Example with multiple instances:**
+```bash
+# Terminal 1: Chrome on port 9222
+brow start --profile
+
+# Terminal 2: Chrome on port 9223
+brow --port 9223 start --profile
+
+# Now you can control both independently
+brow nav https://example.com                    # Controls port 9222
+brow --port 9223 nav https://different-site.com # Controls port 9223
 ```
 
 ## Philosophy
@@ -156,7 +194,7 @@ cd examples
 ## Architecture
 
 - Single binary with subcommands
-- Connects to Chrome via remote debugging (port 9222)
+- Connects to Chrome via remote debugging (default port 9222)
 - Uses chromedp for Chrome DevTools Protocol communication
 - State persists in Chrome instance, not in brow CLI
 - Each command runs independently and exits

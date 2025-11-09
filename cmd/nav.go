@@ -28,8 +28,11 @@ func init() {
 func runNav(_ *cobra.Command, args []string) error {
 	url := args[0]
 
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
 	// Attach to existing tab instead of creating a new one
-	ctx, cancel, err := browser.GetExistingTabContext()
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}

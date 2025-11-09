@@ -50,7 +50,10 @@ func runCookies(_ *cobra.Command, _ []string) error {
 }
 
 func getCookies() error {
-	ctx, cancel, err := browser.GetExistingTabContext()
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}
@@ -95,7 +98,10 @@ func setACookie() error {
 	// For more complex cookies, users can use JavaScript via eval
 	fmt.Println("Setting cookie via JavaScript...")
 
-	ctx, cancel, err := browser.GetExistingTabContext()
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}
@@ -112,7 +118,10 @@ func setACookie() error {
 }
 
 func clearAllCookies() error {
-	ctx, cancel, err := browser.GetExistingTabContext()
+	// Resolve the port to use (flag > env > default)
+	debugPort := browser.ResolvePort(Port)
+
+	ctx, cancel, err := browser.GetExistingTabContext(debugPort)
 	if err != nil {
 		return err
 	}
