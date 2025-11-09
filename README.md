@@ -2,12 +2,38 @@
 
 Simple CLI tools for browser automation via Chrome DevTools Protocol. Inspired by the philosophy of composable, low-overhead tools for AI agents.
 
-## Quick Start
+**Now available as a Go library!** Use brow programmatically in your applications.
+
+## Installation
+
+### As a Library
 
 ```bash
-# Build
+go get github.com/matejch/brow@latest
+```
+
+Then import in your code:
+```go
+import "github.com/matejch/brow/pkg/client"
+```
+
+### As a CLI Tool
+
+```bash
+# Install from source
+git clone https://github.com/matejch/brow
+cd brow
 go build -o brow
 
+# Or install directly
+go install github.com/matejch/brow@latest
+```
+
+## Quick Start
+
+### CLI Usage
+
+```bash
 # Start Chrome with remote debugging
 ./brow start --profile
 
@@ -15,6 +41,26 @@ go build -o brow
 ./brow nav https://example.com
 ./brow eval 'document.title'
 ./brow screenshot page.png
+```
+
+### Library Usage
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/matejch/brow/pkg/client"
+)
+
+func main() {
+    browser, _ := client.New(nil)
+    defer browser.Close()
+
+    page := browser.Page()
+    result, _ := page.Navigate("https://example.com", true)
+    fmt.Println(result.Title) // "Example Domain"
+}
 ```
 
 ## Commands
@@ -125,7 +171,17 @@ brow --port 9223 nav https://different-site.com # Controls port 9223
 
 ## Library Usage
 
-brow can also be used as a Go library for writing browser automation tests and applications:
+### Installation
+
+Add brow to your project:
+
+```bash
+go get github.com/matejch/brow@v1.2.0
+```
+
+### Complete Example
+
+brow provides a clean, type-safe API for browser automation:
 
 ```go
 package main
@@ -191,8 +247,15 @@ func main() {
 - **Resource management**: Proper cleanup with defer browser.Close()
 - **Timeout support**: Configure operation timeouts
 - **Input sanitization**: Built-in protection against JavaScript injection
+- **Well-tested**: Comprehensive test suite and working examples
+- **Zero breaking changes**: CLI remains fully compatible
 
-See `examples/library_test.go` for complete usage examples and tests.
+### Documentation
+
+- **[Library Usage Guide](LIBRARY_USAGE_GUIDE.md)** - Complete API reference and examples
+- **[Refactor Summary](REFACTOR_SUMMARY.md)** - Architecture and implementation details
+- **[Example Tests](examples/library_test.go)** - Comprehensive test suite
+- **[Example Project](examples/external_project_example/)** - Standalone working example
 
 ## Philosophy
 
@@ -265,26 +328,50 @@ cd examples
 
 ## Architecture
 
+### CLI Architecture
 - Single binary with subcommands
 - Connects to Chrome via remote debugging (default port 9222)
 - Uses chromedp for Chrome DevTools Protocol communication
 - State persists in Chrome instance, not in brow CLI
 - Each command runs independently and exits
 
+### Library Architecture
+```
+┌─────────────────────────────────┐
+│   Your Application              │
+└────────────┬────────────────────┘
+             │
+┌────────────▼────────────────────┐
+│   pkg/client (Browser, Page)    │  ← Public API
+└────────────┬────────────────────┘
+             │
+┌────────────▼────────────────────┐
+│   pkg/operations                │  ← Business logic
+└────────────┬────────────────────┘
+             │
+┌────────────▼────────────────────┐
+│   chromedp (CDP)                │  ← Chrome DevTools Protocol
+└─────────────────────────────────┘
+```
+
 ## Requirements
 
-- Go 1.21+
-- Google Chrome or Chromium installed
+- **Go 1.21+** (for building or using as library)
+- **Google Chrome or Chromium** installed
+- **Chrome remote debugging** enabled (via `brow start` or manual launch)
 
-## Installation
+## Contributing
 
-```bash
-git clone https://github.com/matejch/brow
-cd brow
-go build -o brow
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Or install directly:
-```bash
-go install github.com/matejch/brow@latest
-```
+For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+See LICENSE file for details.
+
+## Links
+
+- **GitHub**: https://github.com/matejch/brow
+- **Issues**: https://github.com/matejch/brow/issues
+- **Latest Release**: https://github.com/matejch/brow/releases/latest
