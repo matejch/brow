@@ -274,6 +274,49 @@ fmt.Println(selector) // "#main > div.content"
 ctx := page.Context() context.Context
 ```
 
+### Multi-Tab Operations
+
+```go
+// Get tab count
+count := browser.TabCount() int
+
+// List all tabs with metadata
+tabs, err := browser.Tabs() ([]*TabInfo, error)
+// TabInfo contains: Index, TargetID, Title, URL
+
+// Access specific tab by index
+page, err := browser.TabByIndex(index int) (*Page, error)
+
+// Create new tab
+newPage, err := browser.NewTab(url string) (*Page, error)
+
+// Close specific tab
+err := browser.CloseTab(index int) error
+
+// Examples:
+browser, _ := client.New(nil)
+
+// List all tabs
+tabs, _ := browser.Tabs()
+for _, tab := range tabs {
+    fmt.Printf("Tab %d: %s (%s)\n", tab.Index, tab.Title, tab.URL)
+}
+
+// Access second tab
+page2, _ := browser.TabByIndex(1)
+page2.Navigate("https://example.com", true)
+
+// Create new tab with URL
+newTab, _ := browser.NewTab("https://example.org")
+
+// Create blank tab
+blankTab, _ := browser.NewTab("")
+blankTab.Navigate("https://example.net", true)
+
+// Close tab by index
+browser.CloseTab(2)
+```
+
 ---
 
 ## Common Use Cases
@@ -507,6 +550,77 @@ func measurePageLoad(url string) (time.Duration, error) {
     fmt.Printf("Performance data: %+v\n", perfData)
 
     return loadTime, nil
+}
+```
+
+### 7. Concurrent Multi-Tab Operations
+
+```go
+func scrapeMultipleSites(urls []string) ([]SiteData, error) {
+    browser, err := client.New(nil)
+    if err != nil {
+        return nil, err
+    }
+    defer browser.Close()
+
+    // Create tabs for each URL
+    tabs := make([]*client.Page, len(urls))
+    for i, url := range urls {
+        tab, err := browser.NewTab(url)
+        if err != nil {
+            return nil, fmt.Errorf("failed to create tab %d: %w", i, err)
+        }
+        tabs[i] = tab
+    }
+
+    // Scrape concurrently
+    type result struct {
+        index int
+        data  SiteData
+        err   error
+    }
+
+    results := make(chan result, len(urls))
+
+    for i, tab := range tabs {
+        go func(index int, page *client.Page) {
+            // Extract data from this tab
+            title, err := page.Eval("document.title")
+            if err != nil {
+                results <- result{index, SiteData{}, err}
+                return
+            }
+
+            headings, err := page.Eval(`
+                Array.from(document.querySelectorAll('h1, h2')).map(h => h.textContent)
+            `)
+            if err != nil {
+                results <- result{index, SiteData{}, err}
+                return
+            }
+
+            results <- result{
+                index: index,
+                data: SiteData{
+                    URL:      urls[index],
+                    Title:    title.(string),
+                    Headings: headings,
+                },
+            }
+        }(i, tab)
+    }
+
+    // Collect results
+    data := make([]SiteData, len(urls))
+    for i := 0; i < len(urls); i++ {
+        res := <-results
+        if res.err != nil {
+            return nil, fmt.Errorf("tab %d error: %w", res.index, res.err)
+        }
+        data[res.index] = res.data
+    }
+
+    return data, nil
 }
 ```
 

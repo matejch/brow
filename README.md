@@ -242,13 +242,42 @@ func main() {
 ### Library Features
 
 - **Simple API**: Browser and Page objects with methods for all operations
+- **Multi-tab support**: Work with multiple tabs concurrently
 - **No global state**: Create multiple browser instances with different configurations
 - **Type-safe**: Strongly-typed options for screenshots, PDFs, storage, etc.
 - **Resource management**: Proper cleanup with defer browser.Close()
 - **Timeout support**: Configure operation timeouts
+- **Thread-safe**: Concurrent operations on different tabs
 - **Input sanitization**: Built-in protection against JavaScript injection
 - **Well-tested**: Comprehensive test suite and working examples
 - **Zero breaking changes**: CLI remains fully compatible
+
+### Multi-Tab Support
+
+Work with multiple tabs concurrently:
+
+```go
+browser, _ := client.New(nil)
+defer browser.Close()
+
+// List all tabs
+tabs, _ := browser.Tabs()
+fmt.Printf("Found %d tabs\n", len(tabs))
+
+// Access specific tab
+page1 := browser.Page()           // First tab (backward compatible)
+page2, _ := browser.TabByIndex(1)  // Second tab
+
+// Create new tabs
+newTab, _ := browser.NewTab("https://example.com")
+
+// Concurrent operations
+go page1.Navigate("https://site1.com", true)
+go page2.Navigate("https://site2.com", true)
+
+// Close tabs
+browser.CloseTab(2)
+```
 
 ### Documentation
 
